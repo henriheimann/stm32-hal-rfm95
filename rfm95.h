@@ -64,6 +64,18 @@ typedef struct {
 	 */
 	uint16_t irq_pin;
 
+	uint8_t device_address[4];
+
+	uint8_t network_session_key[16];
+
+	uint8_t application_session_key[16];
+
 } rfm95_handle_t;
 
 bool rfm95_init(rfm95_handle_t *handle);
+
+void rfm95_reset(rfm95_handle_t *handle);
+
+bool rfm95_set_power(rfm95_handle_t *handle, int8_t power);
+
+bool rfm95_send_data(rfm95_handle_t *handle, uint8_t *data, size_t length);
