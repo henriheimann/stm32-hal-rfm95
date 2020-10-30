@@ -24,6 +24,9 @@
 #define RFM95_SPI_TIMEOUT 10
 #endif
 
+typedef bool (*rfm95_reload_frame_counter_t)(uint16_t *tx_counter, uint16_t *rx_counter);
+typedef void (*rfm95_save_frame_counter_t)(uint16_t tx_counter, uint16_t rx_counter);
+
 /**
  * Structure defining a handle describing am RFM95(W) transceiver.
  */
@@ -55,14 +58,24 @@ typedef struct {
 	uint16_t nrst_pin;
 
 	/**
-	 * The port of the IRQ pin.
+	 * The port of the IRQ / DIO0 pin.
 	 */
 	GPIO_TypeDef *irq_port;
 
 	/**
-	 * The IRQ pin.
+	 * The IRQ / DIO0 pin.
 	 */
 	uint16_t irq_pin;
+
+	/**
+	 * The port of the DIO5 pin.
+	 */
+	GPIO_TypeDef *dio5_port;
+
+	/**
+	 * The DIO5 pin.
+	 */
+	uint16_t dio5_pin;
 
 	uint8_t device_address[4];
 
@@ -70,11 +83,17 @@ typedef struct {
 
 	uint8_t application_session_key[16];
 
+	rfm95_reload_frame_counter_t reload_frame_counter;
+
+	rfm95_save_frame_counter_t save_frame_counter;
+
+	uint16_t rx_frame_count;
+
+	uint16_t tx_frame_count;
+
 } rfm95_handle_t;
 
 bool rfm95_init(rfm95_handle_t *handle);
-
-void rfm95_reset(rfm95_handle_t *handle);
 
 bool rfm95_set_power(rfm95_handle_t *handle, int8_t power);
 

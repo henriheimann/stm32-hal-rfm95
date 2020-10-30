@@ -17,22 +17,23 @@ typedef enum
 	RFM95_REGISTER_FR_MID = 0x07,
 	RFM95_REGISTER_FR_LSB = 0x08,
 	RFM95_REGISTER_PA_CONFIG = 0x09,
-	RFM95_REGISTER_FIFO_ADDR_PTR = 0x0d,
-	RFM95_REGISTER_FIFO_TX_BASE_ADDR = 0x0e,
-	RFM95_REGISTER_FIFO_RX_BASE_ADDR = 0x0f,
-	RFM95_REGISTER_MODEM_CONFIG_1 = 0x1d,
-	RFM95_REGISTER_MODEM_CONFIG_2 = 0x1e,
-	RFM95_REGISTER_SYMB_TIMEOUT_LSB = 0x1f,
+	RFM95_REGISTER_FIFO_ADDR_PTR = 0x0D,
+	RFM95_REGISTER_FIFO_TX_BASE_ADDR = 0x0E,
+	RFM95_REGISTER_FIFO_RX_BASE_ADDR = 0x0F,
+	RFM95_REGISTER_MODEM_CONFIG_1 = 0x1D,
+	RFM95_REGISTER_MODEM_CONFIG_2 = 0x1E,
+	RFM95_REGISTER_SYMB_TIMEOUT_LSB = 0x1F,
 	RFM95_REGISTER_PREAMBLE_MSB = 0x20,
 	RFM95_REGISTER_PREAMBLE_LSB = 0x21,
 	RFM95_REGISTER_PAYLOAD_LENGTH = 0x22,
 	RFM95_REGISTER_MODEM_CONFIG_3 = 0x26,
-	RFM95_REGISTER_INVERT_IQ = 0x33,
+	RFM95_REGISTER_INVERT_IQ_1 = 0x33,
 	RFM95_REGISTER_SYNC_WORD = 0x39,
-	RFM95_REGISTER_INVERT_IQ_2 = 0x3b,
+	RFM95_REGISTER_INVERT_IQ_2 = 0x3B,
 	RFM95_REGISTER_DIO_MAPPING_1 = 0x40,
+	RFM95_REGISTER_DIO_MAPPING_2 = 0x41,
 	RFM95_REGISTER_VERSION = 0x42,
-	RFM95_REGISTER_PA_DAC = 0x4d
+	RFM95_REGISTER_PA_DAC = 0x4D
 } rfm95_register_t;
 
 typedef struct
@@ -47,19 +48,25 @@ typedef struct
 	};
 } rfm95_register_pa_config_t;
 
-#define RFM95_REGISTER_OP_MODE_SLEEP            0x00
-#define RFM95_REGISTER_OP_MODE_LORA             0x80
-#define RFM95_REGISTER_OP_MODE_LORA_STANDBY     0x81
-#define RFM95_REGISTER_OP_MODE_LORA_TX          0x83
+#define RFM95_REGISTER_OP_MODE_SLEEP                            0x00
+#define RFM95_REGISTER_OP_MODE_LORA                             0x80
+#define RFM95_REGISTER_OP_MODE_LORA_STANDBY                     0x81
+#define RFM95_REGISTER_OP_MODE_LORA_TX                          0x83
 
-#define RFM95_REGISTER_PA_DAC_LOW_POWER         0x84
-#define RFM95_REGISTER_PA_DAC_HIGH_POWER        0x87
+#define RFM95_REGISTER_PA_DAC_LOW_POWER                         0x84
+#define RFM95_REGISTER_PA_DAC_HIGH_POWER                        0x87
 
-#define RFM95_REGISTER_MODEM_CONFIG_3_LDR_OPTIM_AGC_AUTO_ON     0x0c
+#define RFM95_REGISTER_MODEM_CONFIG_3_LDR_OPTIM_AGC_AUTO_ON     0x0C
 
-#define RFM95_REGISTER_DIO_MAPPING_1_IRQ_TXDONE     0x40
+#define RFM95_REGISTER_DIO_MAPPING_1_IRQ_TXDONE                 0x40
+#define RFM95_REGISTER_DIO_MAPPING_2_DIO5_MODEREADY             0x00
 
-const unsigned char eu863_lora_frequency[8][3] = {
+#define RFM95_REGISTER_INVERT_IQ_1_ON_TXONLY                    0x27
+#define RFM95_REGISTER_INVERT_IQ_1_OFF                          0x26
+#define RFM95_REGISTER_INVERT_IQ_2_ON                           0x19
+#define RFM95_REGISTER_INVERT_IQ_2_OFF                          0x1D
+
+static const unsigned char eu863_lora_frequency[8][3] = {
 	{0xD9, 0x06, 0x8B}, // Channel 0 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
 	{0xD9, 0x13, 0x58}, // Channel 1 868.300 MHz / 61.035 Hz = 14226264 = 0xD91358
 	{0xD9, 0x20, 0x24}, // Channel 2 868.500 MHz / 61.035 Hz = 14229540 = 0xD92024
@@ -75,7 +82,7 @@ unsigned char NwkSkey[16];
 unsigned char AppSkey[16];
 unsigned char DevAddr[4];
 
-bool rfm95_read(rfm95_handle_t *handle, rfm95_register_t reg, uint8_t *buffer)
+static bool rfm95_read(rfm95_handle_t *handle, rfm95_register_t reg, uint8_t *buffer)
 {
 	HAL_GPIO_WritePin(handle->nss_port, handle->nss_pin, GPIO_PIN_RESET);
 
@@ -94,7 +101,7 @@ bool rfm95_read(rfm95_handle_t *handle, rfm95_register_t reg, uint8_t *buffer)
 	return true;
 }
 
-bool rfm95_write(rfm95_handle_t *handle, rfm95_register_t reg, uint8_t value)
+static bool rfm95_write(rfm95_handle_t *handle, rfm95_register_t reg, uint8_t value)
 {
 	HAL_GPIO_WritePin(handle->nss_port, handle->nss_pin, GPIO_PIN_RESET);
 
@@ -109,6 +116,14 @@ bool rfm95_write(rfm95_handle_t *handle, rfm95_register_t reg, uint8_t value)
 	return true;
 }
 
+static void rfm95_reset(rfm95_handle_t *handle)
+{
+	HAL_GPIO_WritePin(handle->nrst_port, handle->nrst_pin, GPIO_PIN_RESET);
+	HAL_Delay(1); // 0.1ms would theoretically be enough
+	HAL_GPIO_WritePin(handle->nrst_port, handle->nrst_pin, GPIO_PIN_SET);
+	HAL_Delay(5);
+}
+
 bool rfm95_init(rfm95_handle_t *handle)
 {
 	assert(handle->spi_handle->Init.Mode == SPI_MODE_MASTER);
@@ -118,6 +133,8 @@ bool rfm95_init(rfm95_handle_t *handle)
 	assert(handle->spi_handle->Init.CLKPhase == SPI_PHASE_1EDGE);
 
 	rfm95_reset(handle);
+
+	handle->reload_frame_counter(&handle->tx_frame_count, &handle->rx_frame_count);
 
 	// Check for correct version.
 	uint8_t version;
@@ -144,23 +161,15 @@ bool rfm95_init(rfm95_handle_t *handle)
 	// Set TTN sync word 0x34.
 	if (!rfm95_write(handle, RFM95_REGISTER_SYNC_WORD, 0x34)) return false;
 
-	// Set IQ to normal values: TODO: What does this do?
-	if (!rfm95_write(handle, RFM95_REGISTER_INVERT_IQ, 0x27)) return false;
-	if (!rfm95_write(handle, RFM95_REGISTER_INVERT_IQ_2, 0x1d)) return false;
+	// Set IQ inversion.
+	if (!rfm95_write(handle, RFM95_REGISTER_INVERT_IQ_1, RFM95_REGISTER_INVERT_IQ_1_ON_TXONLY)) return false;
+	if (!rfm95_write(handle, RFM95_REGISTER_INVERT_IQ_2, RFM95_REGISTER_INVERT_IQ_2_OFF)) return false;
 
 	// Set up TX and RX FIFO base addresses.
 	if (!rfm95_write(handle, RFM95_REGISTER_FIFO_TX_BASE_ADDR, 0x80)) return false;
 	if (!rfm95_write(handle, RFM95_REGISTER_FIFO_RX_BASE_ADDR, 0x00)) return false;
 
 	return true;
-}
-
-void rfm95_reset(rfm95_handle_t *handle)
-{
-	HAL_GPIO_WritePin(handle->nrst_port, handle->nrst_pin, GPIO_PIN_RESET);
-	HAL_Delay(1); // 0.1ms would theoretically be enough
-	HAL_GPIO_WritePin(handle->nrst_port, handle->nrst_pin, GPIO_PIN_SET);
-	HAL_Delay(5);
 }
 
 bool rfm95_set_power(rfm95_handle_t *handle, int8_t power)
@@ -193,8 +202,9 @@ static bool rfm95_send_package(rfm95_handle_t *handle, uint8_t *data, size_t len
 {
 	if (!rfm95_write(handle, RFM95_REGISTER_OP_MODE, RFM95_REGISTER_OP_MODE_LORA_STANDBY)) return false;
 
-	// TODO: Why this exact delay?
-	HAL_Delay(10);
+	while (HAL_GPIO_ReadPin(handle->dio5_port, handle->dio5_pin) == GPIO_PIN_RESET) {
+		HAL_Delay(1);
+	}
 
 	if (!rfm95_write(handle, RFM95_REGISTER_DIO_MAPPING_1, RFM95_REGISTER_DIO_MAPPING_1_IRQ_TXDONE)) return false;
 
@@ -236,7 +246,6 @@ bool rfm95_send_data(rfm95_handle_t *handle, const uint8_t *data, size_t length)
 	assert(length + 4 + 9 <= 64);
 
 	uint8_t direction = 0; // Up
-	uint32_t frame_counter_tx = 0;
 	uint8_t frame_control = 0x00;
 	uint8_t frame_port = 0x01;
 	uint8_t mac_header = 0x40;
@@ -251,8 +260,8 @@ bool rfm95_send_data(rfm95_handle_t *handle, const uint8_t *data, size_t length)
 	rfm_data[3] = handle->device_address[1];
 	rfm_data[4] = handle->device_address[0];
 	rfm_data[5] = frame_control;
-	rfm_data[6] = (frame_counter_tx & 0x00ffu);
-	rfm_data[7] = ((frame_counter_tx >> 8u) & 0x00ffu);
+	rfm_data[6] = (handle->tx_frame_count & 0x00ffu);
+	rfm_data[7] = ((uint16_t)(handle->tx_frame_count >> 8u) & 0x00ffu);
 	rfm_data[8] = frame_port;
 	rfm_package_length += 9;
 
@@ -263,15 +272,21 @@ bool rfm95_send_data(rfm95_handle_t *handle, const uint8_t *data, size_t length)
 
 	// Encrypt payload in place in package.
 	memcpy(rfm_data + rfm_package_length, data, length);
-	Encrypt_Payload(rfm_data + rfm_package_length, length, frame_counter_tx, direction);
+	Encrypt_Payload(rfm_data + rfm_package_length, length, handle->tx_frame_count, direction);
 	rfm_package_length += length;
 
 	// Calculate MIC and copy to last 4 bytes of the package.
-	Calculate_MIC(rfm_data, mic, rfm_package_length, frame_counter_tx, direction);
+	Calculate_MIC(rfm_data, mic, rfm_package_length, handle->tx_frame_count, direction);
 	for (uint8_t i = 0; i < 4; i++) {
 		rfm_data[rfm_package_length + i] = mic[i];
 	}
 	rfm_package_length += 4;
 
-	return rfm95_send_package(handle, rfm_data, rfm_package_length);
+	if (!rfm95_send_package(handle, rfm_data, rfm_package_length)) {
+		return false;
+	}
+
+	handle->tx_frame_count++;
+	handle->save_frame_counter(handle->tx_frame_count, handle->rx_frame_count);
+	return true;
 }
