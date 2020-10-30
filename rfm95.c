@@ -230,7 +230,7 @@ static bool rfm95_send_package(rfm95_handle_t *handle, uint8_t *data, size_t len
 	return true;
 }
 
-bool rfm95_send_data(rfm95_handle_t *handle, uint8_t *data, size_t length)
+bool rfm95_send_data(rfm95_handle_t *handle, const uint8_t *data, size_t length)
 {
 	// 64 bytes is maximum size of FIFO
 	assert(length + 4 + 9 <= 64);
@@ -261,11 +261,9 @@ bool rfm95_send_data(rfm95_handle_t *handle, uint8_t *data, size_t length)
 	memcpy(AppSkey, handle->application_session_key, sizeof(handle->application_session_key));
 	memcpy(DevAddr, handle->device_address, sizeof(handle->device_address));
 
-	// Encrypt payload and copy to package.
-	Encrypt_Payload(data, length, frame_counter_tx, direction);
-	for (size_t i = 0; i < length; i++) {
-		rfm_data[rfm_package_length + i] = data[i];
-	}
+	// Encrypt payload in place in package.
+	memcpy(rfm_data + rfm_package_length, data, length);
+	Encrypt_Payload(rfm_data + rfm_package_length, length, frame_counter_tx, direction);
 	rfm_package_length += length;
 
 	// Calculate MIC and copy to last 4 bytes of the package.

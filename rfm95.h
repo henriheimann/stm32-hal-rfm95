@@ -78,4 +78,4 @@ void rfm95_reset(rfm95_handle_t *handle);
 
 bool rfm95_set_power(rfm95_handle_t *handle, int8_t power);
 
-bool rfm95_send_data(rfm95_handle_t *handle, uint8_t *data, size_t length);
+bool rfm95_send_data(rfm95_handle_t *handle, const uint8_t *data, size_t length);
