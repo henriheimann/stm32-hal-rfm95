@@ -198,18 +198,21 @@ bool rfm95_set_power(rfm95_handle_t *handle, int8_t power)
 	return true;
 }
 
-static bool rfm95_send_package(rfm95_handle_t *handle, uint8_t *data, size_t length)
+static bool rfm95_send_package(rfm95_handle_t *handle, uint8_t *data, size_t length, uint8_t channel)
 {
+	assert(channel < 8);
+
+	uint32_t tick_start;
+
 	if (!rfm95_write(handle, RFM95_REGISTER_OP_MODE, RFM95_REGISTER_OP_MODE_LORA_STANDBY)) return false;
 
+	tick_start = HAL_GetTick();
 	while (HAL_GPIO_ReadPin(handle->dio5_port, handle->dio5_pin) == GPIO_PIN_RESET) {
-		HAL_Delay(1);
+		if ((HAL_GetTick() - tick_start) >= RFM95_WAKEUP_TIMEOUT) {
+			rfm95_write(handle, RFM95_REGISTER_OP_MODE, RFM95_REGISTER_OP_MODE_SLEEP);
+			return false;
+		}
 	}
-
-	if (!rfm95_write(handle, RFM95_REGISTER_DIO_MAPPING_1, RFM95_REGISTER_DIO_MAPPING_1_IRQ_TXDONE)) return false;
-
-	// TODO: Random channel
-	uint8_t channel = 0;
 
 	if (!rfm95_write(handle, RFM95_REGISTER_FR_MSB, eu863_lora_frequency[channel][0])) return false;
 	if (!rfm95_write(handle, RFM95_REGISTER_FR_MID, eu863_lora_frequency[channel][1])) return false;
@@ -229,10 +232,15 @@ static bool rfm95_send_package(rfm95_handle_t *handle, uint8_t *data, size_t len
 		rfm95_write(handle, RFM95_REGISTER_FIFO_ACCESS, data[i]);
 	}
 
+	if (!rfm95_write(handle, RFM95_REGISTER_DIO_MAPPING_1, RFM95_REGISTER_DIO_MAPPING_1_IRQ_TXDONE)) return false;
 	if (!rfm95_write(handle, RFM95_REGISTER_OP_MODE, RFM95_REGISTER_OP_MODE_LORA_TX)) return false;
 
+	tick_start = HAL_GetTick();
 	while (HAL_GPIO_ReadPin(handle->irq_port, handle->irq_pin) == GPIO_PIN_RESET) {
-		HAL_Delay(1);
+		if ((HAL_GetTick() - tick_start) >= RFM95_SEND_TIMEOUT) {
+			rfm95_write(handle, RFM95_REGISTER_OP_MODE, RFM95_REGISTER_OP_MODE_SLEEP);
+			return false;
+		}
 	}
 
 	if (!rfm95_write(handle, RFM95_REGISTER_OP_MODE, RFM95_REGISTER_OP_MODE_SLEEP)) return false;
@@ -282,7 +290,9 @@ bool rfm95_send_data(rfm95_handle_t *handle, const uint8_t *data, size_t length)
 	}
 	rfm_package_length += 4;
 
-	if (!rfm95_send_package(handle, rfm_data, rfm_package_length)) {
+	uint8_t pseudorandom_channel = rfm_data[rfm_package_length - 1] & 0x7u;
+
+	if (!rfm95_send_package(handle, rfm_data, rfm_package_length, pseudorandom_channel)) {
 		return false;
 	}
 

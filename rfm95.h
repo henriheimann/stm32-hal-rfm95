@@ -24,6 +24,14 @@
 #define RFM95_SPI_TIMEOUT 10
 #endif
 
+#ifndef RFM95_WAKEUP_TIMEOUT
+#define RFM95_WAKEUP_TIMEOUT 10
+#endif
+
+#ifndef RFM95_SEND_TIMEOUT
+#define RFM95_SEND_TIMEOUT 1000
+#endif
+
 typedef bool (*rfm95_reload_frame_counter_t)(uint16_t *tx_counter, uint16_t *rx_counter);
 typedef void (*rfm95_save_frame_counter_t)(uint16_t tx_counter, uint16_t rx_counter);
 
