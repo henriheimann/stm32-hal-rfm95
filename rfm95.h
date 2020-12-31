@@ -36,7 +36,7 @@ typedef bool (*rfm95_reload_frame_counter_t)(uint16_t *tx_counter, uint16_t *rx_
 typedef void (*rfm95_save_frame_counter_t)(uint16_t tx_counter, uint16_t rx_counter);
 
 /**
- * Structure defining a handle describing am RFM95(W) transceiver.
+ * Structure defining a handle describing an RFM95(W) transceiver.
  */
 typedef struct {
 
