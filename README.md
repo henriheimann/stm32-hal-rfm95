@@ -40,7 +40,7 @@ if (!rfm95_init(&rfm95_handle)) {
 }
 
 uint8_t[] data_packet = {
-		0x01, 0x02, 0x03, 0x4
+    0x01, 0x02, 0x03, 0x4
 };
 
 if (!rfm95_send_data(&rfm95_handle, data_packet, sizeof(data_packet))) {
@@ -78,29 +78,29 @@ eeprom_handle_t eeprom_handle = {
 // Definition of the reload frame counter function.
 static bool reload_frame_counter(uint16_t *tx_counter, uint16_t *rx_counter)
 {
-	uint8_t buffer[6];
+    uint8_t buffer[6];
 
-	if (!eeprom_read_bytes(&eeprom_handle, 0x20, buffer, sizeof(buffer))) {
-		return false;
-	}
+    if (!eeprom_read_bytes(&eeprom_handle, 0x20, buffer, sizeof(buffer))) {
+        return false;
+        }
 
-	if (buffer[0] == 0x1A && buffer[1] == 0xA1) {
-		*tx_counter = (uint16_t)((uint16_t)buffer[2] << 8u) | (uint16_t)buffer[3];
-		*rx_counter = (uint16_t)((uint16_t)buffer[4] << 8u) | (uint16_t)buffer[5];
-	} else {
-		return false;
-	}
+    if (buffer[0] == 0x1A && buffer[1] == 0xA1) {
+        *tx_counter = (uint16_t)((uint16_t)buffer[2] << 8u) | (uint16_t)buffer[3];
+        *rx_counter = (uint16_t)((uint16_t)buffer[4] << 8u) | (uint16_t)buffer[5];
+    } else {
+        return false;
+    }
 
-	return true;
+    return true;
 }
 
 // Definition of the save frame counter function.
 static void save_frame_counter(uint16_t tx_counter, uint16_t rx_counter)
 {
-	uint8_t buffer[6] = {
-			0x1A, 0xA1, (uint8_t)(tx_counter >> 8u) & 0xffu, tx_counter & 0xffu, (uint8_t)(rx_counter >> 8u) & 0xffu, rx_counter & 0xffu
-	};
-	eeprom_write_bytes(&eeprom_handle, 0x20, buffer, sizeof(buffer));
+    uint8_t buffer[6] = {
+        0x1A, 0xA1, (uint8_t)(tx_counter >> 8u) & 0xffu, tx_counter & 0xffu, (uint8_t)(rx_counter >> 8u) & 0xffu, rx_counter & 0xffu
+    };
+    eeprom_write_bytes(&eeprom_handle, 0x20, buffer, sizeof(buffer));
 }
 ```
 
