@@ -134,7 +134,12 @@ bool rfm95_init(rfm95_handle_t *handle)
 
 	rfm95_reset(handle);
 
-	handle->reload_frame_counter(&handle->tx_frame_count, &handle->rx_frame_count);
+	if (handle->reload_frame_counter != NULL) {
+		handle->reload_frame_counter(&handle->tx_frame_count, &handle->rx_frame_count);
+	} else {
+		handle->tx_frame_count = 0;
+		handle->rx_frame_count = 0;
+	}
 
 	// Check for correct version.
 	uint8_t version;
@@ -297,6 +302,8 @@ bool rfm95_send_data(rfm95_handle_t *handle, const uint8_t *data, size_t length)
 	}
 
 	handle->tx_frame_count++;
-	handle->save_frame_counter(handle->tx_frame_count, handle->rx_frame_count);
+	if (handle->save_frame_counter != NULL) {
+		handle->save_frame_counter(handle->tx_frame_count, handle->rx_frame_count);
+	}
 	return true;
 }
