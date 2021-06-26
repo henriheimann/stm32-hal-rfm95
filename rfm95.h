@@ -22,6 +22,7 @@
     defined (STM32F410Rx) || defined (STM32F411xE) || defined (STM32F446xx) || defined (STM32F469xx) || \
     defined (STM32F479xx) || defined (STM32F412Cx) || defined (STM32F412Rx) || defined (STM32F412Vx) || \
     defined (STM32F412Zx) || defined (STM32F413xx) || defined (STM32F423xx)
+#include "stm32f4xx_hal.h"
 #elif defined (TESTING)
 #include "testing/mock_hal.h"
 #else
