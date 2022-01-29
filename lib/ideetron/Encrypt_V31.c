@@ -22,44 +22,12 @@
 * Website:     http://www.ideetron.nl/LoRa
 * E-mail:      info@ideetron.nl
 ******************************************************************************************/
-/****************************************************************************************
-*
-* Created on: 			04-02-2016
-* Supported Hardware: ID150119-02 Nexus board with RFM95
-*
-* Firmware Version 1.0
-* First version
-*
-* Firmware Version 2.0
-* Works the same is 1.0 using own AES encryption
-*
-* Firmware Version 3.0
-* Included direction in MIC calculation and encryption
-*
-* Firmware Version 3.1
-* Now using AppSkey in Encrypt Payload function
-****************************************************************************************/
-
-/*
-*****************************************************************************************
-* INCLUDE FILES
-*****************************************************************************************
-*/
 
 #include "Encrypt_V31.h"
 #include "AES-128_V10.h"
 
-/*
-*****************************************************************************************
-* INCLUDE GLOBAL VARIABLES
-*****************************************************************************************
-*/
-
-extern unsigned char NwkSkey[16];
-extern unsigned char AppSkey[16];
-extern unsigned char DevAddr[4];
-
-void Encrypt_Payload(unsigned char *Data, unsigned char Data_Length, unsigned int Frame_Counter, unsigned char Direction)
+void Encrypt_Payload(unsigned char *Data, unsigned char Data_Length, unsigned int Frame_Counter,
+                     unsigned char Direction, unsigned char Key[16], unsigned char DevAddr[4])
 {
 	unsigned char i = 0x00;
 	unsigned char j;
@@ -102,7 +70,7 @@ void Encrypt_Payload(unsigned char *Data, unsigned char Data_Length, unsigned in
 		Block_A[15] = i;
 
 		//Calculate S
-		AES_Encrypt(Block_A,AppSkey);
+		AES_Encrypt(Block_A, Key);
 
 		//Check for last block
 		if(i != Number_of_Blocks)
@@ -128,28 +96,29 @@ void Encrypt_Payload(unsigned char *Data, unsigned char Data_Length, unsigned in
 	}
 }
 
-void Calculate_MIC(unsigned char *Data, unsigned char *Final_MIC, unsigned char Data_Length, unsigned int Frame_Counter, unsigned char Direction)
+void Calculate_MIC(unsigned char *Data, unsigned char *Final_MIC, unsigned char Data_Length, unsigned int Frame_Counter,
+                   unsigned char Direction, unsigned char NwkSkey[16], unsigned char DevAddr[4])
 {
 	unsigned char i;
 	unsigned char Block_B[16];
 	unsigned char Key_K1[16] = {
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
 	unsigned char Key_K2[16] = {
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
 
 	//unsigned char Data_Copy[16];
 
 	unsigned char Old_Data[16] = {
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
 	unsigned char New_Data[16] = {
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
 
 	unsigned char Number_of_Blocks = 0x00;
@@ -188,12 +157,12 @@ void Calculate_MIC(unsigned char *Data, unsigned char *Final_MIC, unsigned char 
 		Number_of_Blocks++;
 	}
 
-	Generate_Keys(Key_K1, Key_K2);
+	Generate_Keys(Key_K1, Key_K2, NwkSkey);
 
 	//Preform Calculation on Block B0
 
 	//Preform AES encryption
-	AES_Encrypt(Block_B,NwkSkey);
+	AES_Encrypt(Block_B, NwkSkey);
 
 	//Copy Block_B to Old_Data
 	for(i = 0; i < 16; i++)
@@ -215,7 +184,7 @@ void Calculate_MIC(unsigned char *Data, unsigned char *Final_MIC, unsigned char 
 		XOR(New_Data,Old_Data);
 
 		//Preform AES encryption
-		AES_Encrypt(New_Data,NwkSkey);
+		AES_Encrypt(New_Data, NwkSkey);
 
 		//Copy New_Data to Old_Data
 		for(i = 0; i < 16; i++)
@@ -245,7 +214,7 @@ void Calculate_MIC(unsigned char *Data, unsigned char *Final_MIC, unsigned char 
 		XOR(New_Data,Old_Data);
 
 		//Preform last AES routine
-		AES_Encrypt(New_Data,NwkSkey);
+		AES_Encrypt(New_Data, NwkSkey);
 	}
 	else
 	{
@@ -274,7 +243,7 @@ void Calculate_MIC(unsigned char *Data, unsigned char *Final_MIC, unsigned char 
 		XOR(New_Data,Old_Data);
 
 		//Preform last AES routine
-		AES_Encrypt(New_Data,NwkSkey);
+		AES_Encrypt(New_Data, NwkSkey);
 	}
 
 	Final_MIC[0] = New_Data[0];
@@ -283,13 +252,13 @@ void Calculate_MIC(unsigned char *Data, unsigned char *Final_MIC, unsigned char 
 	Final_MIC[3] = New_Data[3];
 }
 
-void Generate_Keys(unsigned char *K1, unsigned char *K2)
+void Generate_Keys(unsigned char *K1, unsigned char *K2, unsigned char NwkSkey[16])
 {
 	unsigned char i;
 	unsigned char MSB_Key;
 
 	//Encrypt the zeros in K1 with the NwkSkey
-	AES_Encrypt(K1,NwkSkey);
+	AES_Encrypt(K1, NwkSkey);
 
 	//Create K1
 	//Check if MSB is 1
@@ -377,4 +346,3 @@ void XOR(unsigned char *New_Data,unsigned char *Old_Data)
 		New_Data[i] = New_Data[i] ^ Old_Data[i];
 	}
 }
-
