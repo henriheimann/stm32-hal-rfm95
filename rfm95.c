@@ -274,6 +274,20 @@ static bool process_mac_commands(rfm95_handle_t *handle, const uint8_t *frame_pa
 	while (index < frame_payload_length) {
 		switch (frame_payload[index++])
 		{
+			case 0x05: // RXParamSetupReq
+			{
+				if ((answer_index + 4) >= 51) return false;
+
+				uint8_t dl_settings = frame_payload[index++];
+				uint8_t frequency_lsb = frame_payload[index++];
+				uint8_t frequency_msb = frame_payload[index++];
+				uint8_t frequency_hsb = frame_payload[index++];
+				uint32_t frequency = (frequency_lsb | (frequency_msb << 8) | (frequency_hsb << 16)) * 100;
+
+				answer_buffer[answer_index++] = 0x05;
+				answer_buffer[answer_index++] = 0b0000111;
+				break;
+			}
 			case 0x06: // DevStatusReq
 			{
 				if ((answer_index + 3) >= 51) return false;
