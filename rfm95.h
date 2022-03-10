@@ -45,7 +45,7 @@
 #define RFM95_RECEIVE_TIMEOUT 1000
 #endif
 
-#define RFM95_EEPROM_CONFIG_MAGIC 0x2233
+#define RFM95_EEPROM_CONFIG_MAGIC 0xab67
 
 typedef struct {
 
