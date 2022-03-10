@@ -274,9 +274,38 @@ static bool process_mac_commands(rfm95_handle_t *handle, const uint8_t *frame_pa
 	while (index < frame_payload_length) {
 		switch (frame_payload[index++])
 		{
+			case 0x01: // ResetConf
+			{
+				if (index >= frame_payload_length) return false;
+
+				index += 1;
+				break;
+			}
+			case 0x02: // LinkCheckReq
+			{
+				if ((index + 1) >= frame_payload_length) return false;
+
+				index += 2;
+				break;
+			}
+			case 0x03: // LinkADRReq
+			{
+				if ((index + 3) >= frame_payload_length) return false;
+
+				index += 4;
+				break;
+			}
+			case 0x04: // DutyCycleReq
+			{
+				if (index >= frame_payload_length) return false;
+
+				index += 1;
+				break;
+			}
 			case 0x05: // RXParamSetupReq
 			{
-				if ((answer_index + 4) >= 51) return false;
+				if ((index + 4) >= frame_payload_length) return false;
+				if ((answer_index + 2) >= 51) return false;
 
 				uint8_t dl_settings = frame_payload[index++];
 				uint8_t frequency_lsb = frame_payload[index++];
@@ -338,9 +367,32 @@ static bool process_mac_commands(rfm95_handle_t *handle, const uint8_t *frame_pa
 				answer_buffer[answer_index++] = 0x08;
 				break;
 			}
-			case 0x03: // LinkADRReq
+			case 0x09: // TxParamSetupReq
 			{
-				index += 4;
+				if (index >= frame_payload_length) return false;
+
+				break;
+			}
+			case 0x0a: // DlChannelReq
+			{
+				if ((index + 4) >= frame_payload_length) return false;
+
+				break;
+			}
+			case 0x0b: // RekeyConf
+			{
+				if (index >= frame_payload_length) return false;
+
+				break;
+			}
+			case 0x0c: // ADRParamSetupReq
+			{
+				if (index >= frame_payload_length) return false;
+
+				break;
+			}
+			case 0x0d: // DeviceTimeReq
+			{
 				break;
 			}
 		}
